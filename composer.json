@@ -1,0 +1,33 @@
+{
+  "name": "qq348069510/smsbao",
+  "version": "v1.0.0",
+  "type": "library",
+  "description": "适用于短信宝API v1 快捷工具 短信宝：http://www.smsbao.com/",
+  "keywords": [
+    "smsbao",
+    "短信宝",
+    "短信接口"
+  ],
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/qq348069510/smsbao",
+  "authors": [
+    {
+      "name": "IT老酸奶",
+      "email": "348069510@qq.com",
+      "homepage": "http://www.huangjian-ln.cn",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "email": "348069510@qq.com"
+  },
+  "require": {
+    "php": ">=5.3.0",
+    "ext-curl": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "smsbao\\": "src"
+    }
+  }
+}
