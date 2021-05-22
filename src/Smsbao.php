@@ -1,6 +1,6 @@
 <?php
 // +----------------------------------------------------------------------
-// | 短信宝快捷工具 [ Smsbao ] v1.0.1
+// | 短信宝快捷工具 [ Smsbao ] v1.0.2
 // +----------------------------------------------------------------------
 // | 适用于短信宝API v1 短信宝：http://www.smsbao.com/
 // +----------------------------------------------------------------------
@@ -17,6 +17,7 @@ class Smsbao
     private $smsBaoUsername;
     private $smsBaoPassword;
     private $errorMessage;
+    private $curlError;
     private $isSSL = true;
 
     //国内短信
@@ -49,12 +50,13 @@ class Smsbao
      */
     public function send($mobile, $content, $type = self::GN_SMS)
     {
-        $url = $this->apiUrl($type) . "?u=" . $this->smsBaoUsername . "&p=" . $this->smsBaoPassword . "&m=" . $mobile . "&c=" . urlencode($content);
-        $httpCurlGet = $this->httpCurlGet($url);
+        $type = (mb_strpos($mobile, "+") !== false) && ($type === self::GN_SMS) ? self::GW_SMS : $type;
+        $url = $this->apiUrl($type) . "?u=" . $this->smsBaoUsername . "&p=" . $this->smsBaoPassword . "&m=" . urlencode($mobile) . "&c=" . urlencode($content);
+        $httpCurlGet = $this->httpCurl($url);
         if ($httpCurlGet == "0") {
             return true;
         } else {
-            $this->errorMessage = $this->errorNoToMessage($httpCurlGet);
+            $this->errorMessage = empty($this->curlError) ? $this->errorNoToMessage($httpCurlGet) : $this->curlError;
             return false;
         }
     }
@@ -66,13 +68,13 @@ class Smsbao
     public function query()
     {
         $url = $this->apiUrl(self::QUERY) . "?u=" . $this->smsBaoUsername . "&p=" . $this->smsBaoPassword;
-        $httpCurlGet = $this->httpCurlGet($url);
+        $httpCurlGet = $this->httpCurl($url);
         $response = explode("\n", $httpCurlGet);
         if ($response[0] == "0") {
             $info = explode(",", $response[1]);
             return "发送条数：" . $info[0] . "条，剩余条数：" . $info[1] . "条";
         } else {
-            $this->errorMessage = $this->errorNoToMessage($response[0]);
+            $this->errorMessage = empty($this->curlError) ? $this->errorNoToMessage($response[0]) : $this->curlError;
             return $this->errorMessage;
         }
     }
@@ -178,23 +180,37 @@ class Smsbao
     }
 
     /**
-     * Http Get请求
+     * Http 请求
      * @param $url
+     * @param null $post
+     * @param null $header
      * @return bool|string
      */
-    private function httpCurlGet($url)
+    private function httpCurl($url, $post = null, $header = null)
     {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36');
+        if (!empty($post)) {
+            curl_setopt($ch, CURLOPT_POST, true);
+            if (is_array($post)) {
+                $post = http_build_query($post);
+            }
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
+        }
+        if (!empty($header) || is_array($header)) {
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+        }
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36');
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         $response = curl_exec($ch);
-        //关闭URL请求
+        $this->curlError = null;
+        if (!$response) {
+            $this->curlError = $response = curl_error($ch);
+        }
         curl_close($ch);
-        //显示获得的数据
         return $response;
     }
 }
