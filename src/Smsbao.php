@@ -207,7 +207,7 @@ class Smsbao
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         $response = curl_exec($ch);
         $this->curlError = null;
-        if (!$response) {
+        if ($response === false) {
             $this->curlError = $response = curl_error($ch);
         }
         curl_close($ch);
